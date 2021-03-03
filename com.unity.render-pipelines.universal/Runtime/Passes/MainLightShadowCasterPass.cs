@@ -23,7 +23,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         }
 
         const int k_MaxCascades = 4;
-        const int k_ShadowmapBufferBits = 16;
+        const DepthBits k_ShadowmapBufferBits = DepthBits.Depth16;
         Vector4 m_MainLightShadowParams;
         int m_ShadowmapWidth;
         int m_ShadowmapHeight;
@@ -31,7 +31,6 @@ namespace UnityEngine.Rendering.Universal.Internal
         bool m_SupportsBoxFilterForShadows;
 
         RTHandle m_MainLightShadowmap;
-        RenderTexture m_MainLightShadowmapTexture;
 
         Matrix4x4[] m_MainLightShadowMatrices;
         ShadowSliceData[] m_CascadeSlices;
@@ -115,9 +114,14 @@ namespace UnityEngine.Rendering.Universal.Internal
 
         public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
         {
-            m_MainLightShadowmapTexture = ShadowUtils.GetTemporaryShadowTexture(m_ShadowmapWidth,
-                m_ShadowmapHeight, k_ShadowmapBufferBits);
-            m_MainLightShadowmap = RTHandles.Alloc(m_MainLightShadowmapTexture);
+            if (m_MainLightShadowmap == null || m_MainLightShadowmap.rt.width != m_ShadowmapWidth ||
+                m_MainLightShadowmap.rt.height != m_ShadowmapHeight)
+            {
+                m_MainLightShadowmap?.Release();
+                m_MainLightShadowmap = ShadowUtils.AllocShadowRTHandle(m_ShadowmapWidth, m_ShadowmapHeight,
+                    k_ShadowmapBufferBits, "_MainLightShadowmapTexture");
+            }
+
             ConfigureTarget(m_MainLightShadowmap);
             ConfigureClear(ClearFlag.All, Color.black);
         }
@@ -133,20 +137,10 @@ namespace UnityEngine.Rendering.Universal.Internal
         {
             if (cmd == null)
                 throw new ArgumentNullException("cmd");
-
-            if (m_MainLightShadowmapTexture)
-            {
-                RenderTexture.ReleaseTemporary(m_MainLightShadowmapTexture);
-                m_MainLightShadowmapTexture = null;
-                m_MainLightShadowmap = null;
-            }
         }
 
         void Clear()
         {
-            m_MainLightShadowmapTexture = null;
-            m_MainLightShadowmap = null;
-
             for (int i = 0; i < m_MainLightShadowMatrices.Length; ++i)
                 m_MainLightShadowMatrices[i] = Matrix4x4.identity;
 
@@ -262,6 +256,12 @@ namespace UnityEngine.Rendering.Universal.Internal
                     invShadowAtlasHeight,
                     m_ShadowmapWidth, m_ShadowmapHeight));
             }
+        }
+
+        public void Dispose()
+        {
+            m_MainLightShadowmap?.Release();
+            m_MainLightShadowmap = null;
         }
     };
 }
