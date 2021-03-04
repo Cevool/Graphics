@@ -1,5 +1,6 @@
 void BuildInputData(Varyings input, SurfaceDescription surfaceDescription, out InputData inputData)
 {
+    inputData = (InputData)0;
     inputData.positionWS = input.positionWS;
 
     #ifdef _NORMALMAP
@@ -29,9 +30,9 @@ void BuildInputData(Varyings input, SurfaceDescription surfaceDescription, out I
 
     inputData.fogCoord = input.fogFactorAndVertexLight.x;
     inputData.vertexLighting = input.fogFactorAndVertexLight.yzw;
-    inputData.bakedGI = SAMPLE_GI(input.lightmapUV, input.sh, inputData.normalWS);
+    //inputData.bakedGI = SAMPLE_GI(input.lightmapUV, input.sh, inputData.normalWS);
     inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(input.positionCS);
-    inputData.shadowMask = SAMPLE_SHADOWMASK(input.lightmapUV);
+    //inputData.shadowMask = SAMPLE_SHADOWMASK(input.lightmapUV);
 }
 
 PackedVaryings vert(Attributes input)
@@ -52,44 +53,45 @@ half4 frag(PackedVaryings packedInput) : SV_TARGET
     SurfaceDescriptionInputs surfaceDescriptionInputs = BuildSurfaceDescriptionInputs(unpacked);
     SurfaceDescription surfaceDescription = SurfaceDescriptionFunction(surfaceDescriptionInputs);
 
-    #if _AlphaClip
-        half alpha = surfaceDescription.Alpha;
-        clip(alpha - surfaceDescription.AlphaClipThreshold);
-    #elif _SURFACE_TYPE_TRANSPARENT
-        half alpha = surfaceDescription.Alpha;
-    #else
-        half alpha = 1;
-    #endif
+    // #if _AlphaClip
+    //    half alpha = surfaceDescription.Alpha;
+    //    clip(alpha - surfaceDescription.AlphaClipThreshold);
+    // #elif _SURFACE_TYPE_TRANSPARENT
+    //    half alpha = surfaceDescription.Alpha;
+    // #else
+    //    half alpha = 1;
+    // #endif
 
-    InputData inputData;
-    BuildInputData(unpacked, surfaceDescription, inputData);
+    // InputData inputData;
+    // BuildInputData(unpacked, surfaceDescription, inputData);
 
-    #ifdef _SPECULAR_SETUP
-        float3 specular = surfaceDescription.Specular;
-        float metallic = 1;
-    #else
-        float3 specular = 0;
-        float metallic = surfaceDescription.Metallic;
-    #endif
+    // #ifdef _SPECULAR_SETUP
+    //     float3 specular = surfaceDescription.Specular;
+    //     float metallic = 1;
+    // #else
+    //     float3 specular = 0;
+    //     float metallic = surfaceDescription.Metallic;
+    // #endif
 
-    SurfaceData surface         = (SurfaceData)0;
-    surface.albedo              = surfaceDescription.BaseColor;
-    surface.metallic            = saturate(metallic);
-    surface.specular            = specular;
-    surface.smoothness          = saturate(surfaceDescription.Smoothness),
-    surface.occlusion           = surfaceDescription.Occlusion,
-    surface.emission            = surfaceDescription.Emission,
-    surface.alpha               = saturate(alpha);
-    surface.clearCoatMask       = 0;
-    surface.clearCoatSmoothness = 1;
+    // SurfaceData surface         = (SurfaceData)0;
+    // surface.albedo              = surfaceDescription.BaseColor;
+    // surface.metallic            = saturate(metallic);
+    // surface.specular            = specular;
+    // surface.smoothness          = saturate(surfaceDescription.Smoothness),
+    // surface.occlusion           = surfaceDescription.Occlusion,
+    // surface.emission            = surfaceDescription.Emission,
+    // surface.alpha               = saturate(alpha);
+    // surface.clearCoatMask       = 0;
+    // surface.clearCoatSmoothness = 1;
 
-    #ifdef _CLEARCOAT
-        surface.clearCoatMask       = saturate(surfaceDescription.CoatMask);
-        surface.clearCoatSmoothness = saturate(surfaceDescription.CoatSmoothness);
-    #endif
+    // #ifdef _CLEARCOAT
+    //     surface.clearCoatMask       = saturate(surfaceDescription.CoatMask);
+    //     surface.clearCoatSmoothness = saturate(surfaceDescription.CoatSmoothness);
+    // #endif
 
-    half4 color = BuiltInFragmentPBR(inputData, surface);
+    // half4 color = BuiltInFragmentPBR(inputData, surface);
 
-    color.rgb = MixFog(color.rgb, inputData.fogCoord);
+    // color.rgb = MixFog(color.rgb, inputData.fogCoord);
+    half4 color = half4(1, 0, 0, 1);
     return color;
 }

@@ -75,12 +75,12 @@ Varyings BuildVaryings(Attributes input)
     #else
         float3 lightDirectionWS = _LightDirection;
     #endif
-    output.positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, lightDirectionWS));
-    #if UNITY_REVERSED_Z
-        output.positionCS.z = min(output.positionCS.z, UNITY_NEAR_CLIP_VALUE);
-    #else
-        output.positionCS.z = max(output.positionCS.z, UNITY_NEAR_CLIP_VALUE);
-    #endif
+    //output.positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, lightDirectionWS));
+    //#if UNITY_REVERSED_Z
+    //    output.positionCS.z = min(output.positionCS.z, UNITY_NEAR_CLIP_VALUE);
+    //#else
+    //    output.positionCS.z = max(output.positionCS.z, UNITY_NEAR_CLIP_VALUE);
+    //#endif
 #elif (SHADERPASS == SHADERPASS_META)
     output.positionCS = MetaVertexPosition(float4(input.positionOS, 0), input.uv1, input.uv2, unity_LightmapST, unity_DynamicLightmapST);
 #else
@@ -112,16 +112,16 @@ Varyings BuildVaryings(Attributes input)
     output.screenPosition = vertexInput.positionNDC;
 #endif
 
-#if (SHADERPASS == SHADERPASS_FORWARD) || (SHADERPASS == SHADERPASS_GBUFFER)
-    OUTPUT_LIGHTMAP_UV(input.uv1, unity_LightmapST, output.lightmapUV);
-    OUTPUT_SH(normalWS, output.sh);
-#endif
+//#if (SHADERPASS == SHADERPASS_FORWARD) || (SHADERPASS == SHADERPASS_GBUFFER)
+//    OUTPUT_LIGHTMAP_UV(input.uv1, unity_LightmapST, output.lightmapUV);
+//    OUTPUT_SH(normalWS, output.sh);
+//#endif
 
-#ifdef VARYINGS_NEED_FOG_AND_VERTEX_LIGHT
-    half3 vertexLight = VertexLighting(positionWS, normalWS);
-    half fogFactor = ComputeFogFactor(output.positionCS.z);
-    output.fogFactorAndVertexLight = half4(fogFactor, vertexLight);
-#endif
+//#ifdef VARYINGS_NEED_FOG_AND_VERTEX_LIGHT
+//    half3 vertexLight = VertexLighting(positionWS, normalWS);
+//    half fogFactor = ComputeFogFactor(output.positionCS.z);
+//    output.fogFactorAndVertexLight = half4(fogFactor, vertexLight);
+//#endif
 
 #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
     output.shadowCoord = GetShadowCoord(vertexInput);
