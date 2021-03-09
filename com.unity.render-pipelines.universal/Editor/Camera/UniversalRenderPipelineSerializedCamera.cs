@@ -69,12 +69,9 @@ namespace UnityEditor.Rendering.Universal
 #endif
         }
 
-        public void Refresh()
-        {
-            var o = new PropertyFetcher<UniversalAdditionalCameraData>(serializedAdditionalDataObject);
-            cameras = o.Find("m_Cameras");
-        }
-
+        /// <summary>
+        /// Updates the internal serialized objects
+        /// </summary>
         public void Update()
         {
             baseCameraSettings.Update();
@@ -82,11 +79,23 @@ namespace UnityEditor.Rendering.Universal
             serializedAdditionalDataObject.Update();
         }
 
+        /// <summary>
+        /// Applies the modified properties to the serialized objects
+        /// </summary>
         public void Apply()
         {
             baseCameraSettings.ApplyModifiedProperties();
             serializedObject.ApplyModifiedProperties();
             serializedAdditionalDataObject.ApplyModifiedProperties();
+        }
+
+        /// <summary>
+        /// Refreshes the serialized properties from the serialized objects
+        /// </summary>
+        public void Refresh()
+        {
+            var o = new PropertyFetcher<UniversalAdditionalCameraData>(serializedAdditionalDataObject);
+            cameras = o.Find("m_Cameras");
         }
     }
 }
