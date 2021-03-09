@@ -48,11 +48,20 @@
 // #endif
 // }
 
-// float3 shadergraph_LWReflectionProbe(float3 viewDir, float3 normalOS, float lod)
-// {
-//     float3 reflectVec = reflect(-viewDir, normalOS);
-//     return DecodeHDREnvironment(SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0, samplerunity_SpecCube0, reflectVec, lod), unity_SpecCube0_HDR);
-// }
+real3 DecodeHDREnvironment(real4 encodedIrradiance, real4 decodeInstructions)
+{
+    // Take into account texture alpha if decodeInstructions.w is true(the alpha value affects the RGB channels)
+    real alpha = max(decodeInstructions.w * (encodedIrradiance.a - 1.0) + 1.0, 0.0);
+
+    // If Linear mode is not supported we can skip exponent part
+    return (decodeInstructions.x * PositivePow(alpha, decodeInstructions.y)) * encodedIrradiance.rgb;
+}
+
+float3 shadergraph_LWReflectionProbe(float3 viewDir, float3 normalOS, float lod)
+{
+    float3 reflectVec = reflect(-viewDir, normalOS);
+    return DecodeHDREnvironment(SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0, samplerunity_SpecCube0, reflectVec, lod), unity_SpecCube0_HDR);
+}
 
 // void shadergraph_LWFog(float3 position, out float4 color, out float density)
 // {
