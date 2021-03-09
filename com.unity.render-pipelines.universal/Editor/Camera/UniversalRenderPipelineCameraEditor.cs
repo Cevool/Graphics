@@ -124,8 +124,6 @@ namespace UnityEditor.Rendering.Universal
         public bool isSameClearFlags { get { return !settings.clearFlags.hasMultipleDifferentValues; } }
         public bool isSameOrthographic { get { return !settings.orthographic.hasMultipleDifferentValues; } }
 
-        Dictionary<Object, UniversalAdditionalCameraData> m_AdditionalCameraDatas = new Dictionary<Object, UniversalAdditionalCameraData>();
-
         readonly AnimBool m_ShowBGColorAnim = new AnimBool();
         readonly AnimBool m_ShowOrthoAnim = new AnimBool();
         readonly AnimBool m_ShowTargetEyeAnim = new AnimBool();
@@ -167,28 +165,19 @@ namespace UnityEditor.Rendering.Universal
         public new void OnEnable()
         {
             base.OnEnable();
+            settings.OnEnable();
+
+            m_SerializedCamera = new UniversalRenderPipelineSerializedCamera(serializedObject, settings);
 
             m_CommonCameraSettingsFoldout = new SavedBool($"{target.GetType()}.CommonCameraSettingsFoldout", false);
             m_EnvironmentSettingsFoldout = new SavedBool($"{target.GetType()}.EnvironmentSettingsFoldout", false);
             m_OutputSettingsFoldout = new SavedBool($"{target.GetType()}.OutputSettingsFoldout", false);
             m_RenderingSettingsFoldout = new SavedBool($"{target.GetType()}.RenderingSettingsFoldout", false);
             m_StackSettingsFoldout = new SavedBool($"{target.GetType()}.StackSettingsFoldout", false);
-
-            var additionalCameraList = new List<Object>();
-            foreach (var cameraTarget in targets)
-            {
-                var additionData = (cameraTarget as Component).gameObject.GetComponent<UniversalAdditionalCameraData>();
-                if (additionData == null)
-                    additionData = (cameraTarget as Component).gameObject.AddComponent<UniversalAdditionalCameraData>();
-                m_AdditionalCameraDatas[cameraTarget] = additionData;
-                additionalCameraList.Add(additionData);
-            }
+            
             m_ErrorIcon = EditorGUIUtility.Load("icons/console.erroricon.sml.png") as Texture2D;
             validCameras.Clear();
             errorCameras.Clear();
-            settings.OnEnable();
-
-            init(additionalCameraList);
 
             UpdateAnimationValues(true);
             UpdateCameraTypeIntPopupData();
@@ -198,13 +187,13 @@ namespace UnityEditor.Rendering.Universal
 
         void UpdateCameras()
         {
-            m_SerializedCamera.RefreshCameras();
+            m_SerializedCamera.Refresh();
 
             var camType = (CameraRenderType)m_SerializedCamera.cameraType.intValue;
             if (camType != CameraRenderType.Base)
                 return;
 
-            m_LayerList = new ReorderableList(m_SerializedCamera.serializedObject, m_SerializedCamera.cameras, true, false, true, true)
+            m_LayerList = new ReorderableList(m_SerializedCamera.serializedAdditionalDataObject, m_SerializedCamera.cameras, true, false, true, true)
             {
                 drawElementCallback = DrawElementCallback,
                 onSelectCallback = SelectElement,
@@ -212,7 +201,7 @@ namespace UnityEditor.Rendering.Universal
                 {
                     m_SerializedCamera.cameras.DeleteArrayElementAtIndex(list.index);
                     ReorderableList.defaultBehaviours.DoRemoveButton(list);
-                    m_SerializedCamera.serializedObject.ApplyModifiedProperties();
+                    m_SerializedCamera.Apply();
                 },
                 onAddDropdownCallback = AddCameraToCameraList
             };
@@ -383,17 +372,9 @@ namespace UnityEditor.Rendering.Universal
 
             var length = m_SerializedCamera.cameras.arraySize;
             ++m_SerializedCamera.cameras.arraySize;
-            m_SerializedCamera.cameras.serializedObject.ApplyModifiedProperties();
+            m_SerializedCamera.Apply();
             m_SerializedCamera.cameras.GetArrayElementAtIndex(length).objectReferenceValue = validCameras[selected];
-            m_SerializedCamera.cameras.serializedObject.ApplyModifiedProperties();
-        }
-
-        void init(List<Object> additionalCameraData)
-        {
-            if (additionalCameraData == null)
-                return;
-
-            m_SerializedCamera = new UniversalRenderPipelineSerializedCamera(new SerializedObject(additionalCameraData.ToArray()));
+            m_SerializedCamera.Apply();
         }
 
         public new void OnDisable()
@@ -428,8 +409,7 @@ namespace UnityEditor.Rendering.Universal
                 return;
             }
 
-            settings.Update();
-            m_SerializedCamera.serializedObject.Update();
+            m_SerializedCamera.Update();
             UpdateAnimationValues(false);
 
             // Get the type of Camera we are using
@@ -459,8 +439,7 @@ namespace UnityEditor.Rendering.Universal
             }
 
             EditorGUI.indentLevel--;
-            settings.ApplyModifiedProperties();
-            m_SerializedCamera.serializedObject.ApplyModifiedProperties();
+            m_SerializedCamera.Apply();
         }
 
         void DrawCommonSettings()
@@ -486,9 +465,11 @@ namespace UnityEditor.Rendering.Universal
                 return;
             }
 
-            ScriptableRenderer.RenderingFeatures supportedRenderingFeatures = m_AdditionalCameraDatas[target]?.scriptableRenderer?.supportedRenderingFeatures;
+            bool cameraStackingAvailable = m_SerializedCamera
+                .camerasAdditionalData
+                .All(c => c.scriptableRenderer?.supportedRenderingFeatures?.cameraStacking ?? false);
 
-            if (supportedRenderingFeatures != null && supportedRenderingFeatures.cameraStacking == false)
+            if (!cameraStackingAvailable)
             {
                 EditorGUILayout.HelpBox("The renderer used by this camera doesn't support camera stacking. Only Base camera will render.", MessageType.Warning);
                 return;
@@ -497,7 +478,7 @@ namespace UnityEditor.Rendering.Universal
             if (m_StackSettingsFoldout.value)
             {
                 m_LayerList.DoLayoutList();
-                m_SerializedCamera.serializedObject.ApplyModifiedProperties();
+                m_SerializedCamera.Apply();
 
                 if (errorCameras.Any())
                 {
@@ -567,7 +548,7 @@ namespace UnityEditor.Rendering.Universal
                 {
                     DrawPostProcessingOverlay(rpAsset);
                     EditorGUILayout.PropertyField(m_SerializedCamera.clearDepth, Styles.clearDepth);
-                    m_SerializedCamera.serializedObject.ApplyModifiedProperties();
+                    m_SerializedCamera.Apply();
                 }
 
                 DrawRenderShadows();
@@ -797,7 +778,7 @@ namespace UnityEditor.Rendering.Universal
             {
                 m_SerializedCamera.volumeLayerMask.intValue = selectedVolumeLayerMask;
                 m_SerializedCamera.volumeTrigger.objectReferenceValue = selectedVolumeTrigger;
-                m_SerializedCamera.serializedObject.ApplyModifiedProperties();
+                m_SerializedCamera.Apply();
             }
         }
 
@@ -830,7 +811,7 @@ namespace UnityEditor.Rendering.Universal
             if (EditorGUI.EndChangeCheck())
             {
                 m_SerializedCamera.renderer.intValue = selectedRenderer;
-                m_SerializedCamera.serializedObject.ApplyModifiedProperties();
+                m_SerializedCamera.Apply();
             }
         }
 
@@ -861,8 +842,8 @@ namespace UnityEditor.Rendering.Universal
                 }
                 showPostProcessWarning &= !ShowPostProcessingWarning(showPostProcessWarning && selectedAntialiasing != AntialiasingMode.None);
 
-                EditorGUILayout.PropertyField(m_SerializedCamera.stopNaN, Styles.stopNaN);
-                showPostProcessWarning &= !ShowPostProcessingWarning(showPostProcessWarning && m_SerializedCamera.stopNaN.boolValue);
+                EditorGUILayout.PropertyField(m_SerializedCamera.stopNaNs, Styles.stopNaN);
+                showPostProcessWarning &= !ShowPostProcessingWarning(showPostProcessWarning && m_SerializedCamera.stopNaNs.boolValue);
                 EditorGUILayout.PropertyField(m_SerializedCamera.dithering, Styles.dithering);
                 ShowPostProcessingWarning(showPostProcessWarning && m_SerializedCamera.dithering.boolValue);
             }
