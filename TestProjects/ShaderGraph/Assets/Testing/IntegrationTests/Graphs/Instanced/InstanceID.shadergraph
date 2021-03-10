@@ -81,9 +81,18 @@
     },
     "m_ActiveTargets": [
         {
+            "m_Id": "cfc814737f7d4e64b19bcff360862bca"
+        },
+        {
             "m_Id": "fe2857ef9ed24cfe9172b62fbb56acbf"
         }
     ]
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.Rendering.BuiltIn.ShaderGraph.BuiltInUnlitSubTarget",
+    "m_ObjectId": "016ae77c14f4421aba04fcf30f7b6aa5"
 }
 
 {
@@ -318,6 +327,20 @@
         "m_SerializableColors": []
     },
     "m_SerializedDescriptor": "VertexDescription.Tangent"
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.Rendering.BuiltIn.ShaderGraph.BuiltInTarget",
+    "m_ObjectId": "cfc814737f7d4e64b19bcff360862bca",
+    "m_ActiveSubTarget": {
+        "m_Id": "016ae77c14f4421aba04fcf30f7b6aa5"
+    },
+    "m_SurfaceType": 0,
+    "m_AlphaMode": 0,
+    "m_TwoSided": false,
+    "m_AlphaClip": false,
+    "m_CustomEditorGUI": ""
 }
 
 {
