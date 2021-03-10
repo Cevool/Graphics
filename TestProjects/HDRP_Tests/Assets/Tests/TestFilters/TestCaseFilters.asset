@@ -132,24 +132,6 @@ MonoBehaviour:
     Reason: unstable on yamato
   - FilteredScene: {fileID: 0}
     FilteredScenes:
-    - {fileID: 102900000, guid: 95280217564a80c45916bbb33c3159fb, type: 3}
-    ColorSpace: -1
-    BuildPlatform: -2
-    GraphicsDevice: 21
-    XrSdk:
-    StereoModes: 0
-    Reason: black screen  on yamato
-  - FilteredScene: {fileID: 0}
-    FilteredScenes:
-    - {fileID: 102900000, guid: 95280217564a80c45916bbb33c3159fb, type: 3}
-    ColorSpace: 1
-    BuildPlatform: -2
-    GraphicsDevice: 16
-    XrSdk:
-    StereoModes: 0
-    Reason: Cause a black screen on first frame
-  - FilteredScene: {fileID: 0}
-    FilteredScenes:
     - {fileID: 102900000, guid: ed84243e5c418844f87509bf80fdd919, type: 3}
     ColorSpace: 1
     BuildPlatform: -2
