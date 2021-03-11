@@ -162,10 +162,10 @@ namespace UnityEditor.Rendering.HighDefinition
                         switch (m_Mode.value.GetEnumValue<RayTracingMode>())
                         {
                             case RayTracingMode.Performance:
-                                    RayTracingPerformanceModeGUI(false);
+                                RayTracingPerformanceModeGUI(false);
                                 break;
                             case RayTracingMode.Quality:
-                                    RayTracingQualityModeGUI();
+                                RayTracingQualityModeGUI();
                                 break;
                         }
                     }
@@ -206,8 +206,8 @@ namespace UnityEditor.Rendering.HighDefinition
             // Flag to track if the ray tracing parameters were displayed
             RayCastingMode tracingMode = m_Tracing.value.GetEnumValue<RayCastingMode>();
             bool rayTracingSettingsDisplayed = HDRenderPipeline.pipelineSupportsRayTracing
-                                                && m_Tracing.overrideState.boolValue
-                                                && tracingMode != RayCastingMode.RayMarching;
+                && m_Tracing.overrideState.boolValue
+                && tracingMode != RayCastingMode.RayMarching;
 
             // The rest of the ray tracing UI is only displayed if the asset supports ray tracing and the checkbox is checked.
             if (rayTracingSettingsDisplayed)
