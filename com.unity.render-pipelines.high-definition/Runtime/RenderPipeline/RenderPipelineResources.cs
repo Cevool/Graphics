@@ -305,6 +305,16 @@ namespace UnityEngine.Rendering.HighDefinition
             public Shader SMAAPS;
             [Reload("Runtime/PostProcessing/Shaders/TemporalAntialiasing.shader")]
             public Shader temporalAntialiasingPS;
+            [Reload("Runtime/PostProcessing/Shaders/LensFlareHDRPLerp.shader")]
+            public Shader lensFlareLerpPS;
+            [Reload("Runtime/PostProcessing/Shaders/LensFlareHDRPAdditive.shader")]
+            public Shader lensFlareAdditivePS;
+            [Reload("Runtime/PostProcessing/Shaders/LensFlareHDRPPremultiplied.shader")]
+            public Shader lensFlarePremultipliedPS;
+            [Reload("Runtime/PostProcessing/Shaders/LensFlareHDRPScreen.shader")]
+            public Shader lensFlareScreenPS;
+            [Reload("Runtime/PostProcessing/Shaders/LensFlareHDRPOcclusion.shader")]
+            public Shader lensFlareOcclusionPS;
 
             // Physicaly based DoF
             [Reload("Runtime/PostProcessing/Shaders/DoFCircleOfConfusion.compute")]
