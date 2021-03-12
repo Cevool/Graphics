@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Support for the XboxSeries platform has been added.
+- Added subshadergraphs for SpeedTree8 shadergraph support: LODCrossfade, SpeedTree8Wind, SpeedTree8HueVariation, SpeedTree8Billboard.
 
 ### Fixed
 - Fixed inspector property header styling
