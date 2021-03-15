@@ -89,6 +89,7 @@ namespace UnityEngine
             lensFlareTexture = null;
             uniformScale = 1.0f;
             sizeXY = Vector2.one;
+            allowMultipleElement = false;
             count = 1;
             rotation = 0.0f;
             tint = new Color(1.0f, 1.0f, 1.0f, 0.5f);
@@ -102,7 +103,7 @@ namespace UnityEngine
             lengthSpread = 1f;
             colorGradient = new Gradient();
             colorGradient.SetKeys(new GradientColorKey[] { new GradientColorKey(Color.white, 0.0f), new GradientColorKey(Color.white, 1.0f) },
-                                  new GradientAlphaKey[] { new GradientAlphaKey(1.0f, 0.0f), new GradientAlphaKey(1.0f, 1.0f) });
+                new GradientAlphaKey[] { new GradientAlphaKey(1.0f, 0.0f), new GradientAlphaKey(1.0f, 1.0f) });
             positionCurve = new AnimationCurve(new Keyframe(0.0f, 0.0f, 1.0f, 1.0f), new Keyframe(1.0f, 1.0f, 1.0f, -1.0f));
             scaleCurve = new AnimationCurve(new Keyframe(0.0f, 1.0f), new Keyframe(1.0f, 1.0f));
 
@@ -160,6 +161,10 @@ namespace UnityEngine
         /// Scale size on each dimension
         /// </summary>
         public Vector2 sizeXY;
+        /// <summary>
+        /// Enable multiple slements
+        /// </summary>
+        public bool allowMultipleElement;
         /// <summary>
         /// Element can be repeated 'count' times
         /// </summary>

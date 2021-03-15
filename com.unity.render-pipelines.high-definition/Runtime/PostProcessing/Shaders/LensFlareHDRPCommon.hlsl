@@ -5,7 +5,6 @@
 struct Attributes
 {
     uint vertexID : SV_VertexID;
-    UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
 struct Varyings
@@ -19,13 +18,15 @@ struct Varyings
 sampler2D _FlareTex;
 TEXTURE2D_X(_FlareOcclusionBufferTex);
 
-float4 _FlareColor;
+float4 _FlareColorValue;
 float4 _FlareData0; // x: localCos0, y: localSin0, zw: PositionOffsetXY
 float4 _FlareData1; // x: OcclusionRadius, y: OcclusionSampleCount, z: ScreenPosZ, w: Falloff
 float4 _FlareData2; // xy: ScreenPos, zw: FlareSize
-float4 _FlareData3; // xy: RayOffset, z: invSideCount, w: Edge Offset
+float4 _FlareData3; // xy: RayOffset, z: invSideCount
 float4 _FlareData4; // x: SDF Roundness, y: SDF Frequency
-float4 _FlareData5; // x: Allow Offscreen
+float4 _FlareData5; // x: Allow Offscreen, y: Edge Offset
+
+#define _FlareColor             _FlareColorValue
 
 #define _LocalCos0              _FlareData0.x
 #define _LocalSin0              _FlareData0.y
@@ -41,7 +42,6 @@ float4 _FlareData5; // x: Allow Offscreen
 
 #define _FlareRayOffset         _FlareData3.xy
 #define _FlareShapeInvSide      _FlareData3.z
-#define _FlareEdgeOffset        _FlareData3.w
 
 #define _FlareSDFRoundness      _FlareData4.x
 #define _FlareSDFPolyRadius     _FlareData4.y
@@ -49,6 +49,7 @@ float4 _FlareData5; // x: Allow Offscreen
 #define _FlareSDFPolyParam1     _FlareData4.w
 
 #define _OcclusionOffscreen     _FlareData5.x
+#define _FlareEdgeOffset        _FlareData5.y
 
 float2 Rotate(float2 v, float cos0, float sin0)
 {
@@ -86,7 +87,7 @@ float GetOcclusion(float2 screenPos, float flareDepth, float ratio)
     return contrib;
 }
 
-Varyings vert(Attributes input)
+Varyings vert(Attributes input, uint instanceID : SV_InstanceID)
 {
     Varyings output;
     UNITY_SETUP_INSTANCE_ID(input);
@@ -94,8 +95,8 @@ Varyings vert(Attributes input)
 
     float screenRatio = _ScreenSize.y / _ScreenSize.x;
 
-    float4 posPreScale = float4(2.0f, 2.0f, 1.0f, 1.0f) * GetQuadVertexPosition(input.vertexID) - float4(1.0f, 1.0f, 0.0f, 0.0);
-    output.texcoord = GetQuadTexCoord(input.vertexID);
+    float4 posPreScale = float4(2.0f, 2.0f, 1.0f, 1.0f) * GetQuadVertexPosition(input.vertexID % 6) - float4(1.0f, 1.0f, 0.0f, 0.0);
+    output.texcoord = GetQuadTexCoord(input.vertexID % 6);
 
     posPreScale.xy *= _FlareSize;
     float2 local = Rotate(posPreScale.xy, _LocalCos0, _LocalSin0);
@@ -118,6 +119,7 @@ Varyings vert(Attributes input)
 
 float InverseGradient(float x)
 {
+    // Do *not* simplify as 1.0f - x
     return x * (1.0f - x) / (x + 1e-6f);
 }
 
@@ -146,7 +148,6 @@ float4 ComputePolygon(float2 uv_)
     float an = _FlareSDFPolyParam0;
     float he = _FlareSDFPolyParam1;
 
-    //p = -p.yx;
     float bn = an * floor((atan2(p.y, p.x) + 0.5f * an) / an);
     float cos0 = cos(bn);
     float sin0 = sin(bn);
