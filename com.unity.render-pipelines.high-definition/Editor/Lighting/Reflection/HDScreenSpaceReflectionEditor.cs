@@ -249,7 +249,7 @@ namespace UnityEditor.Rendering.HighDefinition
 
             // RTR
             if (HDRenderPipeline.pipelineSupportsRayTracing && m_Tracing.overrideState.boolValue &&
-                m_Tracing.value.GetEnumValue<RayCastingMode>() == RayCastingMode.RayMarching)
+                m_Tracing.value.GetEnumValue<RayCastingMode>() != RayCastingMode.RayMarching)
             {
                 settings.Save<float>(m_MinSmoothness);
                 settings.Save<float>(m_SmoothnessFadeStart);
@@ -272,7 +272,7 @@ namespace UnityEditor.Rendering.HighDefinition
         {
             // RTR
             if (HDRenderPipeline.pipelineSupportsRayTracing && m_Tracing.overrideState.boolValue &&
-                m_Tracing.value.GetEnumValue<RayCastingMode>() == RayCastingMode.RayMarching)
+                m_Tracing.value.GetEnumValue<RayCastingMode>() != RayCastingMode.RayMarching)
             {
                 settings.TryLoad<float>(ref m_MinSmoothness);
                 settings.TryLoad<float>(ref m_SmoothnessFadeStart);
@@ -293,7 +293,7 @@ namespace UnityEditor.Rendering.HighDefinition
         {
             // RTR
             if (HDRenderPipeline.pipelineSupportsRayTracing && m_Tracing.overrideState.boolValue &&
-                m_Tracing.value.GetEnumValue<RayCastingMode>() == RayCastingMode.RayMarching)
+                m_Tracing.value.GetEnumValue<RayCastingMode>() != RayCastingMode.RayMarching)
             {
                 CopySetting(ref m_MinSmoothness, settings.lightingQualitySettings.RTRMinSmoothness[level]);
                 CopySetting(ref m_SmoothnessFadeStart, settings.lightingQualitySettings.RTRSmoothnessFadeStart[level]);
