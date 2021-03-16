@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace UnityEngine.Rendering
 {
@@ -34,8 +35,7 @@ namespace UnityEngine.Rendering
         private float m_MinScreenFraction = 1.0f;
         private float m_MaxScreenFraction = 1.0f;
         private float m_CurrentFraction = 1.0f;
-        private float m_PrevFraction = -1.0f;
-        private bool  m_ForcingRes = false;
+        private bool m_ForcingRes = false;
         private bool m_CurrentCameraRequest = true;
         private bool m_ForceSoftwareFallback = false;
 
@@ -59,21 +59,84 @@ namespace UnityEngine.Rendering
         /// </summary>
         public Vector2Int finalViewport { get; set; }
 
-
         private DynamicResolutionType type;
 
         private PerformDynamicRes m_DynamicResMethod = null;
-        private static DynamicResolutionHandler s_Instance = new DynamicResolutionHandler();
+
+        private GlobalDynamicResolutionSettings m_CachedSettings = GlobalDynamicResolutionSettings.NewDefault();
+
+        private WeakReference m_OwnerCameraWeakRef = null;
+        private static Dictionary<int, DynamicResolutionHandler> s_CameraInstances = new Dictionary<int, DynamicResolutionHandler>();
+        private static DynamicResolutionHandler s_DefaultInstance = new DynamicResolutionHandler()
+        {
+            m_DynamicResMethod = DefaultDynamicResMethod
+        };
+
+        private static int s_ActiveCameraId = 0;
+        private static DynamicResolutionHandler s_ActiveInstance = s_DefaultInstance;
+
+        //private global state of ScalableBufferManager
+        private static bool s_ActiveInstanceDirty = true;
+        private static float s_GlobalHwFraction = 1.0f;
+        private static bool s_GlobalHwUpresActive = false;
+
+        private bool FlushScalableBufferManagerState()
+        {
+            if (s_GlobalHwUpresActive == HardwareDynamicResIsEnabled() && s_GlobalHwFraction == m_CurrentFraction)
+                return false;
+
+            s_GlobalHwUpresActive = HardwareDynamicResIsEnabled();
+            s_GlobalHwFraction = m_CurrentFraction;
+            ScalableBufferManager.ResizeBuffers(s_GlobalHwFraction, s_GlobalHwFraction);
+            return true;
+        }
+
+        private static DynamicResolutionHandler GetOrCreateDrsInstanceHandler(Camera camera)
+        {
+            if (camera == null)
+                return null;
+
+            DynamicResolutionHandler instance = null;
+            var key = camera.GetInstanceID();
+            if (!s_CameraInstances.TryGetValue(key, out instance))
+            {
+                instance = new DynamicResolutionHandler();
+                instance.m_OwnerCameraWeakRef = new WeakReference(camera);
+                s_CameraInstances.Add(key, instance);
+            }
+            return instance;
+        }
+
+        private static int g_GarbageTickId = 0;
+        private static List<int> s_GarbageHandlers = new List<int>();
+        private static void GarbageCollectCameras()
+        {
+            if (g_GarbageTickId++ < 60)
+                return;
+
+            g_GarbageTickId = 0;
+            foreach (var kv in s_CameraInstances)
+            {
+                if (kv.Value.m_OwnerCameraWeakRef != null && kv.Value.m_OwnerCameraWeakRef.IsAlive)
+                    continue;
+                s_GarbageHandlers.Add(kv.Key);
+            }
+
+            foreach (var k in s_GarbageHandlers)
+            {
+                s_CameraInstances.Remove(k);
+            }
+            s_GarbageHandlers.Clear();
+        }
 
         /// <summary>
         /// Get the instance of the global dynamic resolution handler.
         /// </summary>
-        public static DynamicResolutionHandler instance { get { return s_Instance; } }
+        public static DynamicResolutionHandler instance { get { return s_ActiveInstance; } }
 
 
         private DynamicResolutionHandler()
         {
-            m_DynamicResMethod = DefaultDynamicResMethod;
             filter = DynamicResUpscaleFilter.Bilinear;
         }
 
@@ -107,6 +170,7 @@ namespace UnityEngine.Rendering
                     m_CurrentFraction = fraction;
                 }
             }
+            m_CachedSettings = settings;
         }
 
         public Vector2 GetResolvedScale()
@@ -134,8 +198,29 @@ namespace UnityEngine.Rendering
         /// <param name="scalerType">The type of scaler that is used, this is used to indicate the return type of the scaler to the dynamic resolution system.</param>
         static public void SetDynamicResScaler(PerformDynamicRes scaler, DynamicResScalePolicyType scalerType = DynamicResScalePolicyType.ReturnsMinMaxLerpFactor)
         {
-            s_Instance.m_ScalerType = scalerType;
-            s_Instance.m_DynamicResMethod = scaler;
+            s_ActiveInstance.m_ScalerType = scalerType;
+            s_ActiveInstance.m_DynamicResMethod = scaler;
+        }
+
+        /// <summary>
+        /// Set the scaler method used to drive dynamic resolution for a specific camera (if set, will override the default scaler).
+        /// </summary>
+        /// <param name="camera">Camera to associate the specific scaler. If null, it has the same effect as SetDynamicResScaler</param>
+        /// <param name="scaler">The delegate used to determine the resolution percentage used by the dynamic resolution system.</param>
+        /// <param name="scalerType">The type of scaler that is used, this is used to indicate the return type of the scaler to the dynamic resolution system.</param>
+        static public void SetDynamicResScalerForCamera(Camera camera, PerformDynamicRes scaler, DynamicResScalePolicyType scalerType = DynamicResScalePolicyType.ReturnsMinMaxLerpFactor)
+        {
+            DynamicResolutionHandler instance = GetOrCreateDrsInstanceHandler(camera);
+
+            if (instance == null)
+            {
+                SetDynamicResScaler(scaler, scalerType);
+            }
+            else
+            {
+                instance.m_ScalerType = scalerType;
+                instance.m_DynamicResMethod = scaler;
+            }
         }
 
         /// <summary>
@@ -148,57 +233,83 @@ namespace UnityEngine.Rendering
         }
 
         /// <summary>
+        /// Update the state of the dynamic resolution system for a specific camera.
+        /// Call this function also to switch context between cameras (will set the current camera as active).
+        //  Passing a null camera has the same effect as calling Update without the camera parameter.
+        /// </summary>
+        /// <param name="camera">Camera used to select a specific instance tied to this DynamicResolutionHandler instance.
+        /// </param>
+        /// <param name="settings">(optional) The settings that are to be used by the dynamic resolution system. passing null for the settings will result in the last update's settings used.</param>
+        /// <param name="OnResolutionChange">An action that will be called every time the dynamic resolution system triggers a change in resolution.</param>
+        public static void UpdateAndUseCamera(Camera camera, GlobalDynamicResolutionSettings? settings = null, Action OnResolutionChange = null)
+        {
+            int newCameraId;
+            if (camera == null)
+            {
+                s_ActiveInstance = s_DefaultInstance;
+                newCameraId = 0;
+            }
+            else
+            {
+                s_ActiveInstance = GetOrCreateDrsInstanceHandler(camera);
+                newCameraId = camera.GetInstanceID();
+            }
+
+            s_ActiveInstanceDirty = newCameraId != s_ActiveCameraId;
+            s_ActiveCameraId = newCameraId;
+            s_ActiveInstance.Update(settings.HasValue ? settings.Value : s_ActiveInstance.m_CachedSettings, OnResolutionChange);
+        }
+
+        /// <summary>
         /// Update the state of the dynamic resolution system.
         /// </summary>
         /// <param name="settings">The settings that are to be used by the dynamic resolution system.</param>
         /// <param name="OnResolutionChange">An action that will be called every time the dynamic resolution system triggers a change in resolution.</param>
         public void Update(GlobalDynamicResolutionSettings settings, Action OnResolutionChange = null)
         {
+            GarbageCollectCameras();
             ProcessSettings(settings);
 
-            if (!m_Enabled) return;
+            if (!m_Enabled && !s_ActiveInstanceDirty)
+            {
+                s_ActiveInstanceDirty = false;
+                return;
+            }
 
             if (!m_ForcingRes)
             {
+                bool canUseCurrentResFn = m_DynamicResMethod != null;
+                PerformDynamicRes dynResFunction     = canUseCurrentResFn ? m_DynamicResMethod : s_DefaultInstance.m_DynamicResMethod;
+                DynamicResScalePolicyType scalerType = canUseCurrentResFn ? m_ScalerType : s_DefaultInstance.m_ScalerType;
+
                 if (m_ScalerType == DynamicResScalePolicyType.ReturnsMinMaxLerpFactor)
                 {
-                    float currLerp = m_DynamicResMethod();
+                    float currLerp = dynResFunction();
                     float lerpFactor = Mathf.Clamp(currLerp, 0.0f, 1.0f);
                     m_CurrentFraction = Mathf.Lerp(m_MinScreenFraction, m_MaxScreenFraction, lerpFactor);
                 }
                 else if (m_ScalerType == DynamicResScalePolicyType.ReturnsPercentage)
                 {
-                    float percentageRequested = Mathf.Max(m_DynamicResMethod(), 5.0f);
+                    float percentageRequested = Mathf.Max(dynResFunction(), 5.0f);
                     m_CurrentFraction = Mathf.Clamp(percentageRequested / 100.0f, m_MinScreenFraction, m_MaxScreenFraction);
                 }
             }
 
-            if (m_CurrentFraction != m_PrevFraction)
+            bool hardwareResolutionChanged = false;
+            if (!m_ForceSoftwareFallback && type == DynamicResolutionType.Hardware)
             {
-                m_PrevFraction = m_CurrentFraction;
-
-                if (!m_ForceSoftwareFallback && type == DynamicResolutionType.Hardware)
+                hardwareResolutionChanged = FlushScalableBufferManagerState();
+                if (ScalableBufferManager.widthScaleFactor != m_PrevHWScaleWidth ||
+                    ScalableBufferManager.heightScaleFactor != m_PrevHWScaleHeight)
                 {
-                    ScalableBufferManager.ResizeBuffers(m_CurrentFraction, m_CurrentFraction);
-                }
-
-                if (OnResolutionChange != null)
-                    OnResolutionChange();
-            }
-            else
-            {
-                // Unity can change the scale factor by itself so we need to trigger the Action if that happens as well.
-                if (!m_ForceSoftwareFallback && type == DynamicResolutionType.Hardware)
-                {
-                    if (ScalableBufferManager.widthScaleFactor != m_PrevHWScaleWidth  ||
-                        ScalableBufferManager.heightScaleFactor != m_PrevHWScaleHeight)
-                    {
-                        if (OnResolutionChange != null)
-                            OnResolutionChange();
-                    }
+                    hardwareResolutionChanged = true;
                 }
             }
 
+            if (hardwareResolutionChanged && OnResolutionChange != null)
+                OnResolutionChange();
+
+            s_ActiveInstanceDirty = false;
             m_PrevHWScaleWidth = ScalableBufferManager.widthScaleFactor;
             m_PrevHWScaleHeight = ScalableBufferManager.heightScaleFactor;
         }
