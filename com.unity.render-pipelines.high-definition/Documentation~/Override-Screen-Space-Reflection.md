@@ -22,6 +22,8 @@ HDRP uses the [Volume](Volumes.md) framework to calculate SSR, so to enable and 
 
 [!include[](snippets/volume-override-api.md)]
 
+[!include[](snippets/tracing-modes.md)]
+
 ## Properties
 
 [!include[](snippets/Volume-Override-Enable-Properties.md)]
