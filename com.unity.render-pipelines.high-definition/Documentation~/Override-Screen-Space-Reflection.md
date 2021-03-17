@@ -28,14 +28,6 @@ HDRP uses the [Volume](Volumes.md) framework to calculate SSR, so to enable and 
 
 [!include[](snippets/Volume-Override-Enable-Properties.md)]
 
-### Tracing modes
-
-The properties visible in the Inspector change depending on the option you select from the **Tracing** drop-down:
-
-* To use a screen-space, ray-marched reflection solution, select **Ray Marching** and see [Screen-space](#screen-space) for the list of properties.
-* To use ray tracing, select **Ray Tracing** and see [Ray-traced](#ray-traced) for the list of properties.
-* To use a combination of ray tracing and ray marching, select **Hybrid** and see [Ray-traced](#ray-traced) for the list of properties. This option uses ray marching to intersect on-screen geometry and uses ray tracing to intersect off-screen geometry. This enables HDRP to include on-screen opaque particles, vertex animations, and decals when it calculates reflections. This option only works in [Performance mode](Ray-Tracing-Getting-Started.md#ray-tracint-mode).<br/>**Note**: HDRP uses ray tracing for any geometry inside the ray tracing acceleration structure regardless of whether vertex animation or decals modify the geometry's surface. This means if it fails to intersect the on-screen deformed geometry, it intersects the original mesh inside in the ray tracing acceleration structure. This may cause visual discrepancies between what you see and what you expect.
-
 ### Screen-space
 
 ![](Images/Override-ScreenSpaceReflection1.png)

@@ -23,17 +23,13 @@ HDRP uses the [Volume](Volumes.md) framework to calculate SSGI, so to enable and
 
 [!include[](snippets/volume-override-api.md)]
 
+[!include[](snippets/tracing-modes.md)]
+
+**Note**: In hybrid tracing mode emissive decals do not contribute to global illumination because HDRP renders them later in the render pipeline. For the same reason, emissive Materials that use Force Forward Emissive also do not contribute to global illumination.
+
 ## Properties
 
 [!include[](Snippets/Volume-Override-Enable-Properties.md)]
-
-### Tracing modes
-
-The properties visible in the Inspector change depending on the option you select from the **Tracing** drop-down:
-
-- To use a screen-space, ray-marched global illumination solution, select **Ray Marching** and see [Screen-space](#screen-space) for the list of properties.
-- To use ray tracing, select **Ray Tracing** and see [Ray-traced](#ray-traced) for the list of properties.
-- To use a combination of ray tracing and ray marching, select **Hybrid** and see [Ray-traced](#ray-traced) for the list of properties. This option uses ray marching to intersect on-screen geometry and uses ray tracing to intersect off-screen geometry. This enables HDRP to include on-screen opaque particles, vertex animations, and decals when it calculates global illumination. This option only works in [Performance mode](Ray-Tracing-Getting-Started.md#ray-tracint-mode).<br/>**Note**: HDRP uses ray tracing for any geometry inside the ray tracing acceleration structure regardless of whether vertex animation or decals modify the geometry's surface. This means if it fails to intersect the on-screen deformed geometry, it intersects the original mesh inside in the ray tracing acceleration structure. This may cause visual discrepancies between what you see and what you expect.
 
 ### Screen-space
 
@@ -71,10 +67,12 @@ The properties visible in the Inspector change depending on the option you selec
 | - **Denoiser Radius**          | Set the radius of the spatio-temporal filter.                |
 | - **Second Denoiser Pass**     | Enable this feature to process a second denoiser pass. This helps to remove noise from the effect. |
 
-
 ## Limitations
+
+### Screen-space global illumination
+
+* When rendering [Reflection Probes](Reflection-Probe.md) screen space global illumination is not supported.
 
 ### Ray-traced global illumination
 
-Currently, ray tracing in HDRP does not support [decals](decal.md). This means that ray-traced global illumination does not affect decals in your Scene.
-When rendering [Reflection Probes](Reflection-Probe.md) screen space global illumination is not supported.
+* Currently, ray tracing in HDRP does not support [decals](decal.md). This means that ray-traced global illumination does not affect decals in your Scene.
