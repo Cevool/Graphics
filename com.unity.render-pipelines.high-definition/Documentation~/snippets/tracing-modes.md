@@ -8,7 +8,7 @@ The properties visible in the Inspector change depending on the option you selec
 
 ### Hybrid tracing
 
-This option uses ray marching to intersect on-screen geometry and uses ray tracing to intersect off-screen geometry. This enables HDRP to include on-screen opaque particles, vertex animations, and decals when it calculates global illumination. This option only works in [Performance mode](../Ray-Tracing-Getting-Started.md#ray-tracing-mode).
+This option uses ray marching to intersect on-screen geometry and uses ray tracing to intersect off-screen geometry. This enables HDRP to include on-screen opaque particles, vertex animations, and decals when it processes the effect. This option only works in [Performance mode](../Ray-Tracing-Getting-Started.md#ray-tracing-mode).
 
 In hybrid tracing mode, HDRP processes screen-space ray marching in the GBuffer. This means that it can only use GameObjects rendered using the [deferred](../Forward-And-Deferred-Rendering.md) rendering path. For example, HDRP renders transparent GameObjects in the forward rendering path which means they do not appear in the GBuffer and thus not in effects that use hybrid tracing.
 

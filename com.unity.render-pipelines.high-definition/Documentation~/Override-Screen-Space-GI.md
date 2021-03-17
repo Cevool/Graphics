@@ -25,8 +25,6 @@ HDRP uses the [Volume](Volumes.md) framework to calculate SSGI, so to enable and
 
 [!include[](snippets/tracing-modes.md)]
 
-**Note**: In hybrid tracing mode emissive decals do not contribute to global illumination because HDRP renders them later in the render pipeline. For the same reason, emissive Materials that use Force Forward Emissive also do not contribute to global illumination.
-
 ## Properties
 
 [!include[](Snippets/Volume-Override-Enable-Properties.md)]
@@ -76,3 +74,7 @@ HDRP uses the [Volume](Volumes.md) framework to calculate SSGI, so to enable and
 ### Ray-traced global illumination
 
 * Currently, ray tracing in HDRP does not support [decals](decal.md). This means that ray-traced global illumination does not affect decals in your Scene.
+
+  ### Hybrid global illumination
+
+* In hybrid tracing mode, emissive decals do not contribute to global illumination because HDRP renders them later in the render pipeline. For the same reason, emissive Materials that use Force Forward Emissive also do not contribute to global illumination.
